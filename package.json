@@ -4,11 +4,9 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "start": "cross-env NODE_ENV=production node server",
-    "devServer": "cross-env NODE_ENV=development nodemon server",
-    "frontend-install": "npm install --prefix frontend",
-    "frontend": "cd frontend && npm start",
-    "dev": "concurrently \"npm run devServer\" \"npm run frontend\""
+    "start": "node server"
+   
+    
   },
   "author": "Sylvain Yabré",
   "license": "MIT",

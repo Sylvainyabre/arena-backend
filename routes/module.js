@@ -76,7 +76,7 @@ router.delete("/delete/:moduleId", async (req, res) => {
 });
 
 //Upload file to S3
-route.post("/upload",upload.single("image"), async (req, res) => {
+router.post("/upload",upload.single("image"), async (req, res) => {
   try {
     const file = req.file;
     const uploadResult = await uploadFile(file);

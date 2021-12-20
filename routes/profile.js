@@ -106,7 +106,7 @@ router.delete(
         (ed) => ed._id != req.params.edu_id
       );
       profile.education = newEducations;
-      
+      console.log(newEducations);
       await profile.save();
       return res.json(profile);
     } catch (err) {

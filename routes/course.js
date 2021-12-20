@@ -6,7 +6,6 @@ const Module = require("../models/Module");
 const validateCourseInput = require("../validation/course");
 const passport = require("passport");
 const validateModuleInput = require("../validation/module");
-const { Error } = require("mongoose");
 
 //@desc : get all courses
 //@route: GET api/courses/all
@@ -14,7 +13,7 @@ const { Error } = require("mongoose");
 
 router.get("/all", async (req, res) => {
   try {
-    const courses = await Course.find().populate("modules");
+    const courses = await Course.find().populate('modules');
     if (!courses) {
       return res.status(404).json();
     }
@@ -32,14 +31,18 @@ router.get(
   passport.authenticate("jwt", { session: false }),
   async (req, res) => {
     try {
-      const course = await Course.findById({
-        _id: req.params.courseId,
-      }).populate("modules");
+      const course = await Course.findById({ _id: req.params.courseId }).populate('modules');
       if (!course) {
-        return res.status(404).json({ message: "Course not found ." });
+        return res
+          .status(404)
+          .json({ message: "Course not found ." });
       }
-      
-      return res.json(course);
+      if (!req.user.enrollments.includes(course._id)) {
+        return res
+          .status(401)
+          .json({ message: "You must be enrolled in this course." });
+      }
+      res.json(course);
     } catch (err) {
       res.json({ message: err.message });
     }
@@ -55,7 +58,7 @@ router.post(
   passport.authenticate("jwt", { session: false }),
   async (req, res) => {
     try {
-      const user = await User.findById({ _id: req.user.id });
+      const user = await User.findById({ _id: req.user._id });
       const course = await Course.findById({ _id: req.params.courseId });
       if (!user) {
         return res.status(400).json({ message: "No user found." });
@@ -68,12 +71,13 @@ router.post(
           .status(404)
           .json({ message: "You are already enrolled in this course" });
       } else {
-        
-       
+        const userEnrollments = user.enrollments;
+        userEnrollments.unshift(course._id);
         //const newEnrollments = user.enrollments.unshift(course._id)
-        await user.enrollments.unshift(course._id);
+        user.enrollments = userEnrollments;
+        console.log(userEnrollments);
         await user.save();
-        return res.json(user)
+        res.redirect("/api/profile/");
       }
     } catch (err) {
       res.status(400).json({ message: err.message });
@@ -121,7 +125,9 @@ router.post(
   passport.authenticate("jwt", { session: false }),
   async (req, res) => {
     const { errors, isValid } = validateCourseInput(req.body);
-
+    if (!isValid) {
+      return res.status(400).json(errors);
+    }
     const newCourse = new Course({
       title: req.body.title,
       overview: req.body.overview,
@@ -129,14 +135,6 @@ router.post(
       modules: req.body.modules,
       slug: req.body.slug,
     });
-    const existentCourse = await Course.findOne({ title: newCourse.title });
-    if (existentCourse) {
-      errors.title = "Title already taken";
-      return res.status(400).json(errors);
-    }
-    if (!isValid) {
-      return res.status(400).json(errors);
-    }
     try {
       const savedCourse = await newCourse.save();
       res.json(savedCourse);
@@ -147,7 +145,7 @@ router.post(
 );
 
 //@desc : update a course
-//@route: PUT api/courses/update/courseId
+//@route: PUT api/courses/course/courseId
 //access: Private
 router.put(
   "/update/:courseId",
@@ -155,25 +153,25 @@ router.put(
   async (req, res) => {
     try {
       const course = await Course.findById({ _id: req.params.courseId });
-      
-      if (
-        String(req.user._id) === String(course.owner) ||
-        String(req.user.role) === "admin"
-      ) {
-        const updatedCourse = await Course.findById({
-          _id: req.params.courseId,
-        });
-        updatedCourse.title = req.body.title;
-        updatedCourse.overview = req.body.overview;
-
-        await updatedCourse.save();
-
-        return res.json(updatedCourse);
-      } else {
+      if (req.user._id !== course.owner && req.user.role !== "admin") {
         return res
           .status(400)
           .json({ message: "You are not allowed to update this course." });
       }
+      const updatedCourse = await Course.findByIdAndUpdate(
+        { _id: req.params.courseId },
+        {
+          $set: {
+            title: req.body.title,
+            overview: req.body.overview,
+            owner: req.user._id,
+            modules: req.body.modules,
+            slug: req.body.slug,
+            isPublished:req.body.isPublished?req.body.isPublished:true
+          },
+        },
+        res.json(updatedCourse)
+      );
     } catch (err) {
       res.json({ message: err.message });
     }
@@ -190,23 +188,17 @@ router.delete(
   async (req, res) => {
     try {
       const course = await Course.findById({ _id: req.params.courseId });
-      if (
-        String(req.user.id) === String(course.owner) ||
-        String(req.user.role === "admin")
-      ) {
-        
-        const removedCourse = await Course.deleteOne({
-          _id: req.params.courseId,
-        });
-        return res.status(204).json(removedCourse);
+      if (req.user.id === course.owner) {
+        await Course.remove({ _id: req.params.courseId });
+        req.flash("success", "Course deleted successfully!");
+        return res.redirect("/api/courses/all");
       } else {
         res.status(400).json({
           message: "You do not have permission to delete this course.",
         });
       }
     } catch (err) {
-      
-      res.json({ message: "Internal server error" });
+      res.json({ message: err.message });
     }
   }
 );
@@ -249,8 +241,7 @@ router.post(
         return res.json(savedCourse);
       }
     } catch (err) {
-      
-      res.status(404).json({ message: "Internal server error" });
+      res.status(404).json({ message: err.message });
     }
   }
 );
@@ -270,10 +261,7 @@ router.put(
       if (!course) {
         return res.status(404).json({ message: "Course not found." });
       }
-      if (
-        String(req.user._id) != String(course.owner) &&
-        String(req.user.role) != "admin"
-      ) {
+      if (req.user._id !== course.owner && req.user.role !== "admin") {
         return res
           .status(400)
           .json({ message: "Action not permitted for this user." });
@@ -282,61 +270,22 @@ router.put(
       if (moduleIndex === -1) {
         return res.status(404).json({ message: "Module not found." });
       } else {
-        const moduleId = course.modules[moduleIndex];
-        const module = await Module.findById({ _id: moduleId });
-       
-        module.title = req.body.title;
-        module.overview = req.body.overview;
-        module.body = req.body.body;
+        const module = course.modules[moduleIndex];
+        
 
-        module.save();
-        res.json(module);
+        const updatedModule = {
+          title: req.body.title ? req.body.title : module.title,
+          overview: req.body.overview ? req.body.overview : module.overview,
+          course: course._id,
+          body: req.body.body ? req.body.body : module.body,
+        };
+
+        course.modules[moduleIndex] = updatedModule;
+        await course.save();
+        res.json(course);
       }
     } catch (err) {
-      res.status(400).json({ message: "internal server error" });
-      
-    }
-  }
-);
-
-//Delete a course module
-//@desc : delete a course module
-//make sure user is the owner of the course
-//@route: PUT api/courses/modules/delete/:courseId/:moduleId
-//access: Private
-router.delete(
-  "/modules/delete/:courseId/:moduleId",
-  passport.authenticate("jwt", { session: false }),
-  async (req, res) => {
-    try {
-      const course = await Course.findById({ _id: req.params.courseId });
-      const module = await Module.findById({ _id: req.params.moduleId });
-
-      if (!course) {
-        return res.status(404).json({ message: "Course not found!" });
-      }
-      if (!module) {
-        return res.status(404).json({ message: "Module not found!" });
-      }
-
-      if (
-        String(course.owner) !== String(req.user._id) &&
-        String(req.user.role) !== "admin"
-      ) {
-        return res
-          .status(400)
-          .json({ message: "You are not allowed to delete this module" });
-      } else {
-        course.modules = course.modules.filter(
-          (moduleId) => String(moduleId) !== module._id
-        );
-        await course.save();
-        const removedModule = await Module.deleteOne({ _id: module._id });
-        return res.status(204).json(removedModule);
-      }
-    } catch (error) {
-     
-      return res.status(400).json({ message: "internal server error" });
+      res.status(400).json({ message: err.message });
     }
   }
 );

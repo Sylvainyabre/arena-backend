@@ -1,15 +1,14 @@
-
+const nodemailer = require("nodemailer");
 const express = require("express");
 const crypto = require("crypto");
 const dotenv = require("dotenv");
-dotenv.config({ path: "./config/config.env" });
 const User = require("../models/User");
 const Token = require("../models/Token");
 const router = express.Router();
 const bcrypt = require("bcrypt");
-const sendGridMailer = require("@sendgrid/mail");
+const smtpTransport = require('../config/sendEmail')
 
-sendGridMailer.setApiKey(process.env.SENDGRID_API_KEY_FINAL);
+dotenv.config({ path: "./config/config.env" });
 
 
 //@METHOD: POST api/auth/password/forgotten
@@ -21,26 +20,25 @@ router.post("/forgotten", async (req, res) => {
     const resetToken = crypto.randomBytes(32).toString("hex");
     const email = req.body.email;
     const user = await User.findOne({ email });
-
+   
     if (!user) {
-      return res
-        .status(404)
-        .json({ message: "No user found with this email." });
+      return res.status(404).json({ message: "No user found with this email." });
     }
     let token = await Token.findOne({ userId: user._id });
     if (token) {
       return await token.deleteOne();
     }
     const hashedResetToken = await bcrypt.hash(resetToken, 10);
-    
+    console.log(hashedResetToken)
     const newToken = new Token({
       userId: user._id,
       token: hashedResetToken,
       createdAt: Date.now(),
     });
-
+    
     await newToken.save();
-
+   
+    
     const resetLink = `http://localhost:3000/password/reset/${resetToken}/${user._id}`;
     const messageText = `<h3>Hi, ${user.firstName},</h3> <br> 
         <p> You requested to reset your password, please follow the link below to do so.</p>
@@ -48,14 +46,12 @@ router.post("/forgotten", async (req, res) => {
         <h3> Your friends from Brain Arena</h3>
         <a href = ${resetLink}> Reset password</a>`;
 
-    const requestEmail = {
-      to: user.email, // Change to your recipient
-      from: process.env.SENDGRID_SENDER, // Change to your verified sender
-      subject: "Your BrainArena password reset request.",
+    await smtpTransport.sendMail({
+      to: user.email,
+      from: "no-reply@brainArena.com",
+      subject: "password reset",
       html: messageText,
-    };
-    
-    await sendGridMailer.send(requestEmail).then((res)=>console.log(res));
+    });
 
     res.json({
       message:
@@ -78,65 +74,51 @@ router.post("/reset/:token/:userId", async (req, res) => {
     const user = await User.findOne({ _id: req.params.userId });
     const sentResetToken = req.params.token;
     const resetTokenFromDB = await Token.findOne({ userId: req.params.userId });
-
+    
     if (!user) {
-      return res
-        .status(404)
-        .json({ message: "User not found.", status: "failure" });
+      return res.status(404).json({ message: "User not found." ,status:"failure"});
     }
 
     if (!resetTokenFromDB) {
       return res
         .status(404)
-        .json({ message: "Reset link expired or invalid.", status: "failure" });
+        .json({ message: "Reset link expired or invalid.",status:"failure"});
     }
     if (!newPassword) {
-      return res
-        .status(400)
-        .json({ message: "password is required.", status: "failure" });
+      return res.status(400).json({ message: "password is required.",status:"failure"});
     }
     if (!newPasswordConfirm) {
       return res
         .status(400)
-        .json({
-          message: "Please confirm the new password.",
-          status: "failure",
-        });
+        .json({ message: "Please confirm the new password.",status:"failure" });
     }
     // yabre.tech@gmail.com password changed to YSylv6556
     if (newPassword !== newPasswordConfirm) {
-      return res
-        .status(400)
-        .json({ message: "Passwords do not match.", status: "failure" });
+      return res.status(400).json({ message: "Passwords do not match.",status:"failure" });
     }
-    const isTokenValid = await bcrypt.compare(
-      sentResetToken,
-      resetTokenFromDB.token
-    );
+    const isTokenValid = await bcrypt.compare(sentResetToken, resetTokenFromDB.token);
     if (!isTokenValid) {
       return res
         .status(404)
-        .json({ message: "Reset link expired or invalid.", status: "failure" });
+        .json({ message: "Reset link expired or invalid.",status:"failure" });
     }
 
-    user.password = hashedNewPassword;
-    await user.save();
-    await resetTokenFromDB.remove();
-    const loginLink = "http://localhost:3000/login";
+    user.password = hashedNewPassword
+    await user.save()
+    await resetTokenFromDB.remove()
+    const loginLink = 'http://localhost:3000/login'
     const successMessageText = `<h3>Hi, ${user.firstName}</h3>
     <p> Your password has been successfully reset.</p>
-    <a href=${loginLink}> You may now login</a>`;
-    const successEmail = {
-      to: user.email, // Change to your recipient
-      from: process.env.SENDGRID_SENDER, // Change to your verified sender
-      subject: "Your BrainArena password reset success.",
+    <a href=${loginLink}> You may now login</a>`
+    await smtpTransport.sendMail({
+      to: user.email,
+      from: "no-reply@brainArena.com",
+      subject: "password reset successful.",
       html: successMessageText,
-    };
-    await sendGridMailer.send(successEmail);
-    res.json({ message: "Password successfully reset !", status: "success" });
+    });
+     res.json({message:"Password successfully reset !",status:"success"})
   } catch (err) {
     res.json({ message: err.message });
-    
   }
 });
 

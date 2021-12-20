@@ -86,7 +86,6 @@ router.post("/login", async (req, res) => {
           email: user.email,
           avatar: user.avatar,
           role: user.role,
-          enrollments:user.enrollments
         };
         jwt.sign(
           payload,
@@ -163,10 +162,16 @@ router.delete(
   passport.authenticate("jwt", { session: false }),
   async (req, res) => {
     try {
-      
-     const removedUser = await User.findOneAndRemove({ _id: req.params.user_id });
+      if (req.user.role === "basic" || req.user.role === "admin") {
+        return res
+          .status(400)
+          .json({
+            message: "You do not have permission to perform this action",
+          });
+      }
+      await User.findOneAndRemove({ _id: req.params.user_id });
       req.flash("success", "User delete successfully");
-      res.status(204).json(removedUser)
+      res.redirect("api/dashboard");
     } catch (err) {
       res.status(400).json({ message: err.message });
     }

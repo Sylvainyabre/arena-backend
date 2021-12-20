@@ -13,9 +13,7 @@ module.exports = function validateCourseInput(data) {
   if (validator.isEmpty(data.overview)) {
     errors.overview = "An overview is required for this course.";
   }
-  if (!validator.isLength(data.overview, { min: 10, max: 200 })) {
-    errors.overview = "Overview must be at least 10 characters";
-  }
+  
 
   return {
     errors,

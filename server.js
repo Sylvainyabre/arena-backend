@@ -4,7 +4,6 @@ const morgan = require("morgan");
 const cors = require("cors");
 const passport = require("passport");
 const connectDB = require("./config/db");
-const User = require('./models/User')
 const methodOverride = require('method-override');
 const initializePassport = require("./config/passport");
 const app = express();
@@ -17,8 +16,8 @@ initializePassport(passport)
 
 app.use(cors());
 app.options(cors());
-app.use(express.json({limit: '200mb'}));
-app.use(express.urlencoded({ extended: false ,limit: '200mb'}));
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
 //Loading the config file
 dotenv.config({ path: "./config/config.env" });
@@ -30,8 +29,21 @@ dotenv.config({ path: "./config/config.env" });
 //Database connection
 connectDB();
 
+//Logging requests
+if (process.env.NODE_ENV === "development") {
+  app.use(morgan("dev"));
+}
 
-
+//sessions middleware. This needs to be above the passport middleware
+/*app.use(
+  session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false, //means do not save until something is stored
+    //cookie: { secure: true }
+    store: MongoStore.create({ mongoUrl: MONGO_URI }),
+  })
+);*/
 
 
 //Routes
@@ -47,5 +59,5 @@ const PORT = process.env.PORT || 8000;
 
 app.listen(
   PORT,
-  console.log(`Server running on port ${PORT}`)
+  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`)
 );

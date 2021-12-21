@@ -79,6 +79,7 @@ router.delete("/delete/:moduleId", async (req, res) => {
 router.post("/upload",upload.single("image"), async (req, res) => {
   try {
     const file = req.file;
+    console.log(file)
     const uploadResult = await uploadFile(file);
     const jsonImagePath = {imagePath:`/images/${uploadResult.Key}`}
     await unlinkFile(file.path)

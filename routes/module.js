@@ -4,8 +4,7 @@ const Module = require("../models/Module");
 //S3 file upload with multer
 const multer = require("multer");
 const upload = multer({ dest: "uploads/" });
-const { uploadFile, getFileReadStream } = require("../config/s3");
-const { route } = require(".");
+const { uploadFile, getFileStream } = require("../config/s3");
 const fs = require("fs");
 const util = require("util");
 const unlinkFile = util.promisify(fs.unlink);
@@ -84,10 +83,9 @@ router.post("/upload", upload.single("file"), async (req, res) => {
     const uploadResult = await uploadFile(file);
     console.log(uploadResult);
     const jsonImagePath = {
-      imagePath: `https://brain-arena.herokuapp.com/api/images/${uploadResult.Key}`,
+      imagePath: `https://brain-arena.herokuapp.com/api/modules/images/${uploadResult.Key}`,
     };
     await unlinkFile(file.path);
-    console.log(jsonImagePath);
     return res.json(jsonImagePath);
   } catch (error) {
     res.json({ message: error.message });
@@ -99,7 +97,7 @@ router.get("/images/:key", async (req, res) => {
   const key = req.params.key;
 
   try {
-    const readStream = getFileReadStream(key);
+    const readStream = getFileStream(key);
     return readStream.pipe(res);
   } catch (err) {
     res.json({ message: err.message });

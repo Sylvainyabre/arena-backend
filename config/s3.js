@@ -38,4 +38,4 @@ function getFileStream(fileKey){
 }
 
 exports.uploadFile = uploadFile;
-exports.getFile = getFileStream;
+exports.getFileStream = getFileStream;

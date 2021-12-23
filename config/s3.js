@@ -27,7 +27,7 @@ function uploadFile(file){
 }
 
 //File retrieval handler
-function getFileStream(fileKey){
+ function getFileStream(fileKey){
     const downloadParams = {
       Key:fileKey,
       Bucket:bucketName

@@ -4,12 +4,11 @@ const Module = require("../models/Module");
 //S3 file upload with multer
 const multer = require("multer");
 const upload = multer({ dest: "uploads/" });
-const { uploadFile,getFileReadStream } = require("../config/s3");
+const { uploadFile, getFileReadStream } = require("../config/s3");
 const { route } = require(".");
 const fs = require("fs");
 const util = require("util");
-const unlinkFile = util.promisify(fs.unlink)
-
+const unlinkFile = util.promisify(fs.unlink);
 
 //Get all modules
 router.get("/getAll", async (req, res) => {
@@ -77,29 +76,34 @@ router.delete("/delete/:moduleId", async (req, res) => {
 });
 
 //Upload file to S3
-router.post("/upload",upload.single("file"), async (req, res) => {
+router.post("/upload", upload.single("file"), async (req, res) => {
   try {
     const file = req.file;
-    console.log(file)
+    console.log(file);
     console.log(req.body);
     const uploadResult = await uploadFile(file);
     console.log(uploadResult);
-    const jsonImagePath = {imagePath:`https://brain-arena.herokuapp.com/api/images/${uploadResult.Key}`}
-    await unlinkFile(file.path)
-    console.log(jsonImagePath)
+    const jsonImagePath = {
+      imagePath: `https://brain-arena.herokuapp.com/api/images/${uploadResult.Key}`,
+    };
+    await unlinkFile(file.path);
+    console.log(jsonImagePath);
     return res.json(jsonImagePath);
-    
-    
   } catch (error) {
     res.json({ message: error.message });
   }
 });
 
 //Get image from S3
-router.get("/images/:key",async(req,res)=>{
+router.get("/images/:key", async (req, res) => {
   const key = req.params.key;
-  const readStream = getFileReadStream(key);
-  return readStream.pipe(res);
-})
+
+  try {
+    const readStream = getFileReadStream(key);
+    return readStream.pipe(res);
+  } catch (err) {
+    res.json({ message: err.message });
+  }
+});
 
 module.exports = router;

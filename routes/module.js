@@ -10,6 +10,7 @@ const fs = require("fs");
 const util = require("util");
 const unlinkFile = util.promisify(fs.unlink)
 
+
 //Get all modules
 router.get("/getAll", async (req, res) => {
   try {
@@ -83,7 +84,7 @@ router.post("/upload",upload.single("file"), async (req, res) => {
     console.log(req.body);
     const uploadResult = await uploadFile(file);
     console.log(uploadResult);
-    const jsonImagePath = {imagePath:`/images/${uploadResult.Key}`}
+    const jsonImagePath = {imagePath:`https://brain-arena.herokuapp.com/api/images/${uploadResult.Key}`}
     await unlinkFile(file.path)
     console.log(jsonImagePath)
     return res.json(jsonImagePath);

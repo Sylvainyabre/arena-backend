@@ -13,7 +13,7 @@ const validateModuleInput = require("../validation/module");
 
 router.get("/all", async (req, res) => {
   try {
-    const courses = await Course.find().populate('modules');
+    const courses = await Course.find().populate("modules");
     if (!courses) {
       return res.status(404).json();
     }
@@ -31,11 +31,11 @@ router.get(
   passport.authenticate("jwt", { session: false }),
   async (req, res) => {
     try {
-      const course = await Course.findById({ _id: req.params.courseId }).populate('modules');
+      const course = await Course.findById({
+        _id: req.params.courseId,
+      }).populate("modules");
       if (!course) {
-        return res
-          .status(404)
-          .json({ message: "Course not found ." });
+        return res.status(404).json({ message: "Course not found ." });
       }
       if (!req.user.enrollments.includes(course._id)) {
         return res
@@ -158,20 +158,21 @@ router.put(
           .status(400)
           .json({ message: "You are not allowed to update this course." });
       }
+      const updateData = {
+        title: req.body.title,
+        overview: req.body.overview,
+        owner: req.user._id,
+        modules: req.body.modules,
+        slug: req.body.slug,
+        isPublished: req.body.isPublished ? req.body.isPublished : true,
+      };
       const updatedCourse = await Course.findByIdAndUpdate(
         { _id: req.params.courseId },
-        {
-          $set: {
-            title: req.body.title,
-            overview: req.body.overview,
-            owner: req.user._id,
-            modules: req.body.modules,
-            slug: req.body.slug,
-            isPublished:req.body.isPublished?req.body.isPublished:true
-          },
-        },
-        res.json(updatedCourse)
+        updateData,
+        { new: true }
       );
+
+      return res.json(updatedCourse);
     } catch (err) {
       res.json({ message: err.message });
     }
@@ -271,7 +272,6 @@ router.put(
         return res.status(404).json({ message: "Module not found." });
       } else {
         const module = course.modules[moduleIndex];
-        
 
         const updatedModule = {
           title: req.body.title ? req.body.title : module.title,

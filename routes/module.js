@@ -47,19 +47,17 @@ router.post("/create", async (req, res) => {
 
 //Update a module
 router.put("/update/:moduleId", async (req, res) => {
-  try {
-    const updatedModule = await Module.findByIdAndUpdate(
-      { _id: req.params.moduleId },
-      {
-        $set: {
-    
+  const updateData = {
           title: req.body.title,
           overview: req.body.overview,
           body:req.body.body
-        },
-      },
-      res.json(updatedModule)
-    );
+        }
+  try {
+    const updatedModule = await Module.findByIdAndUpdate(
+      {_id:req.params.moduleId},
+      updateData,
+      {new:true});
+      return res.json(updatedModule)
   } catch (err) {
     res.json({ message: err.message });
   }

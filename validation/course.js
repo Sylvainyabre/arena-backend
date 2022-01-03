@@ -4,6 +4,7 @@ const validator = require('validator');
 module.exports = function validateCourseInput(data) {
   const errors = {};
   data.title = !isEmpty(data.title) ? data.title : "";
+  data.imageURL = !isEmpty(data.imageURL)? data.imageURL:"";
   data.overview = !isEmpty(data.overview) ? data.overview : "";
   data.owner = !isEmpty(data.owner) ? data.owner : "";
 

@@ -130,6 +130,7 @@ router.post(
     }
     const newCourse = new Course({
       title: req.body.title,
+      imageURL:req.body.imageURL,
       overview: req.body.overview,
       owner: req.user._id,
       modules: req.body.modules,

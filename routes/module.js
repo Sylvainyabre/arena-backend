@@ -34,7 +34,7 @@ router.post("/create", async (req, res) => {
   const newModule = new Module({
     course: req.body.course,
     title: req.body.title,
-    summary: req.body.summary,
+    overview: req.body.overview,
     body:req.body.body
   });
   try {
@@ -52,9 +52,9 @@ router.put("/update/:moduleId", async (req, res) => {
       { _id: req.params.moduleId },
       {
         $set: {
-          course: req.body.course,
+    
           title: req.body.title,
-          summary: req.body.summary,
+          overview: req.body.overview,
           body:req.body.body
         },
       },
@@ -80,10 +80,7 @@ router.delete("/delete/:moduleId", async (req, res) => {
 router.post("/upload", upload.single("file"), async (req, res) => {
   try {
     const file = req.file;
-    console.log(file);
-    console.log(req.body);
     const uploadResult = await uploadFile(file);
-    console.log(uploadResult);
     const jsonImagePath = {
       imagePath: `https://brain-arena.herokuapp.com/api/modules/images/${uploadResult.Key}`,
     };

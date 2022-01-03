@@ -258,9 +258,9 @@ router.put(
       if (!course) {
         return res.status(404).json({ message: "Course not found." });
       }
-      if (req.user._id !== course.owner && req.user.role !== "admin") {
+      if (!(req.user._id === course.owner )&& !(req.user.role === "admin")) {
         return res
-          .status(400)
+          .status(401)
           .json({ message: "Action not permitted for this user." });
       }
       const moduleIndex = course.modules.indexOf(req.params.moduleId);
@@ -270,11 +270,9 @@ router.put(
         const module = course.modules[moduleIndex];
 
         const updatedModule = {
-          title: req.body.title ? req.body.title : module.title,
-          overview: req.body.overview ? req.body.overview : module.overview,
-          course: course._id,
-          body: req.body.body ? req.body.body : module.body,
-        };
+          title: req.body.title ,
+          overview: req.body.overview, 
+          body: req.body.body }
 
         course.modules[moduleIndex] = updatedModule;
         await course.save();

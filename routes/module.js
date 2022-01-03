@@ -35,6 +35,7 @@ router.post("/create", async (req, res) => {
     course: req.body.course,
     title: req.body.title,
     summary: req.body.summary,
+    body:req.body.body
   });
   try {
     const savedModule = await newModule.save();
@@ -54,7 +55,7 @@ router.put("/update/:moduleId", async (req, res) => {
           course: req.body.course,
           title: req.body.title,
           summary: req.body.summary,
-          body:req.body
+          body:req.body.body
         },
       },
       res.json(updatedModule)

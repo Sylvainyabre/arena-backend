@@ -13,7 +13,7 @@ const unlinkFile = util.promisify(fs.unlink);
 router.get("/getAll", async (req, res) => {
   try {
     const modules = await Module.find();
-    res.json(modules);
+    return res.json(modules);
   } catch (err) {
     res.json({ message: err.message });
   }
@@ -39,7 +39,7 @@ router.post("/create", async (req, res) => {
   });
   try {
     const savedModule = await newModule.save();
-    res.json(savedModule);
+    return res.json(savedModule);
   } catch (err) {
     res.json({ message: err.message });
   }

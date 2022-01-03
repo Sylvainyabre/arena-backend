@@ -161,10 +161,6 @@ router.put(
       const updateData = {
         title: req.body.title,
         overview: req.body.overview,
-        owner: req.user._id,
-        modules: req.body.modules,
-        slug: req.body.slug,
-        isPublished: req.body.isPublished ? req.body.isPublished : true,
       };
       const updatedCourse = await Course.findByIdAndUpdate(
         { _id: req.params.courseId },

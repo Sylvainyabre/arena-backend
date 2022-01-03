@@ -54,6 +54,7 @@ router.put("/update/:moduleId", async (req, res) => {
           course: req.body.course,
           title: req.body.title,
           summary: req.body.summary,
+          body:req.body
         },
       },
       res.json(updatedModule)

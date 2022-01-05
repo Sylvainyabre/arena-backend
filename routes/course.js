@@ -73,11 +73,11 @@ router.post(
       } else {
         const userEnrollments = user.enrollments;
         userEnrollments.unshift(course._id);
-        //const newEnrollments = user.enrollments.unshift(course._id)
+    
         user.enrollments = userEnrollments;
-        console.log(userEnrollments);
+      
         await user.save();
-        res.redirect("/api/profile/");
+        res.json({user:user});
       }
     } catch (err) {
       res.status(400).json({ message: err.message });
@@ -186,12 +186,13 @@ router.delete(
   async (req, res) => {
     try {
       const course = await Course.findById({ _id: req.params.courseId });
-      if (req.user.id === course.owner) {
-        await Course.remove({ _id: req.params.courseId });
-        req.flash("success", "Course deleted successfully!");
-        return res.redirect("/api/courses/all");
+      if (req.user._id === course.owner) {
+        await Module.deleteMany({course:req.params.courseId})
+        const deleteCount = await Course.deleteOne({ _id: req.params.courseId });
+  
+        return res.json({deleted:deleteCount});
       } else {
-        res.status(400).json({
+        return res.status(400).json({
           message: "You do not have permission to delete this course.",
         });
       }

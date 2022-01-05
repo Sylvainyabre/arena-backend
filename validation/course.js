@@ -11,6 +11,9 @@ module.exports = function validateCourseInput(data) {
   if (validator.isEmpty(data.title)) {
     errors.title = "Title is required for this course.";
   }
+  if(validator.isEmpty(data.imageURL)){
+    errors.imageURL = "Course image required."
+  }
   if (validator.isEmpty(data.overview)) {
     errors.overview = "An overview is required for this course.";
   }

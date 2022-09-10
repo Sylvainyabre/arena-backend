@@ -92,7 +92,7 @@ router.post("/reset/:token/:userId", async (req, res) => {
         .status(400)
         .json({ message: "Please confirm the new password.",status:"failure" });
     }
-    // yabre.tech@gmail.com password changed to YSylv6556
+    
     if (newPassword !== newPasswordConfirm) {
       return res.status(400).json({ message: "Passwords do not match.",status:"failure" });
     }

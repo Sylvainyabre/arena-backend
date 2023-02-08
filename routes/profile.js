@@ -21,11 +21,17 @@ router.get("/user/:user_id", async (req, res) => {
 
     if (!userProfile) {
       errors.noProfile = "No profile found for this user.";
-      return res.status(404).json(errors);
+      return res
+        .status(404)
+        .json({ success: false, message: "validation error", data: errors });
     }
-    return res.json(userProfile);
+    return res.json({ success: true, message: "", data: userProfile });
   } catch (err) {
-    res.status(404).json({ profile: "There is no profile for this user." });
+    res.status(404).json({
+      success: false,
+      message: "There is no profile for this user.",
+      data: null,
+    });
   }
 });
 
@@ -42,12 +48,14 @@ router.get("/all", async (req, res) => {
     ]);
     if (!profiles) {
       errors.profiles = "No profiles found.";
-      res.status(404).json(errors);
+      res
+        .status(404)
+        .json({ success: false, message: "No profiles found.", data: errors });
     }
     res.json(profiles);
   } catch (err) {
     errors.profile = err.message;
-    res.json(errors);
+    res.json({ success: false, message: err.message, data: errors });
   }
 });
 
@@ -75,18 +83,26 @@ router.post(
 
       if (profile) {
         if (profile.user._id !== req.user._id) {
-          return res
-            .status(401)
-            .json({ profile: "You are not allowed to update this profile." });
+          return res.status(401).json({
+            success: false,
+            message: "You are not allowed to update this profile.",
+            data: null,
+          });
         }
         profile.education.unshift(newEd);
         profile.save();
         res.json(profile);
       } else {
-        res.status(400).json({ profile: "No profile found for this user" });
+        res.status(400).json({
+          success: false,
+          message: "No profile found for this user",
+          data: null,
+        });
       }
     } catch (err) {
-      res.status(400).json({ message: err.message });
+      res
+        .status(400)
+        .json({ success: false, message: err.message, data: null });
     }
   }
 );
@@ -108,9 +124,11 @@ router.delete(
       profile.education = newEducations;
       console.log(newEducations);
       await profile.save();
-      return res.json(profile);
+      return res.json({ success: true, message: "", data: profile });
     } catch (err) {
-      res.status(404).json({ profile: err.message });
+      res
+        .status(404)
+        .json({ success: false, message: err.message, data: null });
     }
   }
 );
@@ -126,9 +144,15 @@ router.delete(
     try {
       await Profile.findOneAndRemove({ user: req.user.id });
       await User.findOneAndRemove({ id: req.user.id });
-      res.json({ message: "User and profile deleted successfully" });
+      res.json({
+        success: false,
+        message: "User and profile deleted successfully",
+        data: null,
+      });
     } catch (err) {
-      res.status(400).json({ message: err.message });
+      res
+        .status(404)
+        .json({ success: false, message: err.message, data: null });
     }
   }
 );
@@ -141,19 +165,25 @@ router.get(
   passport.authenticate("jwt", { session: false }),
   async (req, res) => {
     const errors = {};
-    const UserProfile = await Profile.findOne({ user: req.user.id }).populate(
+    const userProfile = await Profile.findOne({ user: req.user.id }).populate(
       "user",
       ["firstName", "lastName", "enrollments", "avatar"]
     );
     try {
-      if (!UserProfile) {
+      if (!userProfile) {
         errors.noProfile = "No profile found for this user.";
-        return res.status(404).json(errors);
+        return res.status(404).json({
+          success: false,
+          message: "No profile found for this user.",
+          data: errors,
+        });
       } else {
-        res.json(UserProfile);
+        return res.json({ success: true, message: "", data: userProfile });
       }
     } catch (err) {
-      res.status(404).json(err);
+      res
+        .status(404)
+        .json({ success: false, message: err.message, data: null });
     }
   }
 );
@@ -169,7 +199,9 @@ router.post(
     const { errors, isValid } = validateProfileInput(req.body);
     //check validation
     if (!isValid) {
-      return res.status(400).json(errors);
+      return res
+        .status(400)
+        .json({ success: false, message: "", data: errors });
     }
     const profileFields = {};
     profileFields.user = req.user.id;
@@ -188,7 +220,11 @@ router.post(
       if (!userProfile) {
         const newProfile = await new Profile(profileFields);
         const savedProfile = await newProfile.save();
-        return res.json(savedProfile);
+        return res.json({
+          success: true,
+          message: "profile created successfully",
+          data: savedProfile,
+        });
       } else {
         //If profile already exists, update it.
         const updatedProfile = await Profile.findOneAndUpdate(
@@ -196,10 +232,10 @@ router.post(
           { $set: profileFields },
           { new: true }
         );
-        res.json(updatedProfile);
+        res.json({ success: true, message: "", data: updatedProfile });
       }
     } catch (err) {
-      res.json(err);
+      res.json({ success: false, message: err.message, data: null });
     }
   }
 );

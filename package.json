@@ -10,6 +10,7 @@
   "author": "Sylvain Yabré",
   "license": "MIT",
   "dependencies": {
+    "@sendgrid/mail": "^7.7.0",
     "accesscontrol": "^2.2.1",
     "accesscontrol-middleware": "^1.0.3",
     "aws-sdk": "^2.1046.0",
@@ -39,6 +40,7 @@
     "passport-jwt": "^4.0.0",
     "path": "^0.12.7",
     "sharp": "^0.29.3",
+    "twilio": "^4.7.1",
     "validator": "^13.6.0"
   },
   "devDependencies": {

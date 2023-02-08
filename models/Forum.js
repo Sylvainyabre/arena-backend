@@ -19,6 +19,10 @@ const ForumPostSchema = new Schema({
       required:true
       
   },
+  author:{
+    type:mongoose.Schema.Types.ObjectId,
+    ref:'User'
+  },
    replies:[
         {type:mongoose.Schema.Types.ObjectId,
         ref:'ForumPost'}

@@ -16,6 +16,16 @@ const CourseSchema = new mongoose.Schema(
       
 
     },
+    class:{
+      type:String,
+      required:true
+
+    },
+    subject:{
+      type:String,//will be one of math,physics,chemistry,computer science
+      required:true
+
+    },
     overview: {
       type: String,
       required: true,

@@ -9,17 +9,19 @@ const validateModuleInput = require("../validation/module");
 
 //@desc : get all courses
 //@route: GET api/courses/all
-// access: Public
+//access: Public
 
 router.get("/all", async (req, res) => {
   try {
     const courses = await Course.find().populate("modules");
     if (!courses) {
-      return res.status(404).json();
+      return res
+        .status(404)
+        .json({ success: false, message: "No courses found", data: null });
     }
-    res.json(courses);
+    res.json({ success: true, message: "", data: courses });
   } catch (err) {
-    res.json({ message: err.message });
+    res.json({ success: false, message: err.message, data: null });
   }
 });
 
@@ -35,16 +37,20 @@ router.get(
         _id: req.params.courseId,
       }).populate("modules");
       if (!course) {
-        return res.status(404).json({ message: "Course not found ." });
+        return res
+          .status(404)
+          .json({ success: false, message: "Course not found", data: null });
       }
       if (!req.user.enrollments.includes(course._id)) {
-        return res
-          .status(401)
-          .json({ message: "You must be enrolled in this course." });
+        return res.status(401).json({
+          success: false,
+          message: "You are not enrolled in this course.",
+          data: null,
+        });
       }
-      res.json(course);
+      res.json({ success: true, message: "", data: course });
     } catch (err) {
-      res.json({ message: err.message });
+      res.json({ success: false, message: err.message, data: null });
     }
   }
 );
@@ -61,26 +67,34 @@ router.post(
       const user = await User.findById({ _id: req.user._id });
       const course = await Course.findById({ _id: req.params.courseId });
       if (!user) {
-        return res.status(400).json({ message: "No user found." });
-      }
-      if (!course) {
-        return res.status(400).json({ message: "No course found ." });
-      }
-      if (user.enrollments.includes(req.params.courseId)) {
         return res
           .status(404)
-          .json({ message: "You are already enrolled in this course" });
+          .json({ success: false, message: "No user found.", data: null });
+      }
+      if (!course) {
+        return res
+          .status(404)
+          .json({ success: false, message: "No course found.", data: null });
+      }
+      if (user.enrollments.includes(req.params.courseId)) {
+        return res.status(404).json({
+          success: false,
+          message: "You are already enrolled in this course",
+          data: null,
+        });
       } else {
         const userEnrollments = user.enrollments;
         userEnrollments.unshift(course._id);
-    
+
         user.enrollments = userEnrollments;
-      
+
         await user.save();
-        res.json({user:user});
+        res.json({ success: true, message: "", data: user });
       }
     } catch (err) {
-      res.status(400).json({ message: err.message });
+      res
+        .status(400)
+        .json({ success: false, message: err.message, data: null });
     }
   }
 );
@@ -97,22 +111,26 @@ router.post(
       const course = await Course.findById({ _id: req.params.courseId });
 
       if (!course) {
-        return res.status(400).json({ message: "Course not found." });
+        return res
+          .status(404)
+          .json({ success: false, message: "Course not found.", data: null });
       }
       if (!user.enrollments.includes(course)) {
-        return res
-          .status(400)
-          .json({ message: "You are not enrolled in this course." });
+        return res.status(404).json({
+          success: false,
+          message: "You are not enrolled in this course.",
+          data: null,
+        });
       } else {
         const newEnrollments = user.enrollments.filter(
           (course) => course._id !== req.params.courseId
         );
         user.enrollments = newEnrollments;
         await user.save();
-        return res.json(user);
+        return res.json({ success: true, message: "", data: user });
       }
     } catch (err) {
-      res.json({ message: err.message });
+      res.json({ success: true, message: err.message, data: null });
     }
   }
 );
@@ -126,21 +144,25 @@ router.post(
   async (req, res) => {
     const { errors, isValid } = validateCourseInput(req.body);
     if (!isValid) {
-      return res.status(400).json(errors);
+      return res
+        .status(400)
+        .json({ success: false, message: "Validation failed", data: errors });
     }
     const newCourse = new Course({
       title: req.body.title,
-      imageURL:req.body.imageURL,
+      imageURL: req.body.imageURL,
       overview: req.body.overview,
       owner: req.user._id,
       modules: req.body.modules,
       slug: req.body.slug,
+      subject: req.body.subject,
+      class: req.body.class,
     });
     try {
       const savedCourse = await newCourse.save();
-      res.json(savedCourse);
+      return res.json({ success: true, message: "", data: savedCourse });
     } catch (err) {
-      res.json({ message: err.message });
+      res.json({ success: false, message: err.message, data: null });
     }
   }
 );
@@ -155,23 +177,22 @@ router.put(
     try {
       const course = await Course.findById({ _id: req.params.courseId });
       if (req.user._id !== course.owner && req.user.role !== "admin") {
-        return res
-          .status(400)
-          .json({ message: "You are not allowed to update this course." });
+        return res.status(401).json({
+          success: false,
+          message: "You are not allowed to update this course.",
+          data: null,
+        });
       }
-      const updateData = {
-        title: req.body.title,
-        overview: req.body.overview,
-      };
+
       const updatedCourse = await Course.findByIdAndUpdate(
         { _id: req.params.courseId },
-        updateData,
+        req.body,
         { new: true }
       );
 
-      return res.json(updatedCourse);
+      return res.json({ success: true, message: "", data: updatedCourse });
     } catch (err) {
-      res.json({ message: err.message });
+      res.json({ success: false, message: err.message, data: null });
     }
   }
 );
@@ -186,18 +207,31 @@ router.delete(
   async (req, res) => {
     try {
       const course = await Course.findById({ _id: req.params.courseId });
-      if (req.user._id === course.owner) {
-        await Module.deleteMany({course:req.params.courseId})
-        const deleteCount = await Course.deleteOne({ _id: req.params.courseId });
-  
-        return res.json({deleted:deleteCount});
+      if (!course) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Course not found", data: null });
+      }
+      if (req.user._id === course.owner || req.user.role === "admin") {
+        await Module.deleteMany({ course: req.params.courseId });
+        const deleteCount = await Course.deleteOne({
+          _id: req.params.courseId,
+        });
+
+        return res.json({
+          success: true,
+          message: "Course delete successfully",
+          data: deleteCount,
+        });
       } else {
-        return res.status(400).json({
+        return res.status(401).json({
+          success: false,
           message: "You do not have permission to delete this course.",
+          data: null,
         });
       }
     } catch (err) {
-      res.json({ message: err.message });
+      res.json({ success: false, message: err.message, data: null });
     }
   }
 );
@@ -212,19 +246,25 @@ router.post(
   async (req, res) => {
     const { errors, isValid } = validateModuleInput(req.body);
     if (!isValid) {
-      return res.status(400).json(errors);
+      return res
+        .status(400)
+        .json({ success: false, message: "Validation error", data: errors });
     }
     try {
       const course = await Course.findById({ _id: req.params.courseId });
 
       if (!course) {
-        return res.status(400).json({ message: "Course not found." });
+        return res
+          .status(400)
+          .json({ success: false, message: "Course not found.", data: null });
       }
 
       if (!course.owner === req.user._id && req.user.role !== "admin") {
-        return res
-          .status(400)
-          .json({ message: "You are not allowed to edit this course." });
+        return res.status(400).json({
+          success: false,
+          message: "You are not allowed to edit this course.",
+          data: null,
+        });
       } else {
         const newModule = new Module({
           course: course._id,
@@ -237,10 +277,17 @@ router.post(
         courseModules.unshift(newModule);
         course.modules = courseModules;
         const savedCourse = await course.save();
-        return res.json(savedCourse);
+        return res.json({
+          success: true,
+          message: "Module successfully created",
+          data: savedCourse,
+        });
       }
+      Í;
     } catch (err) {
-      res.status(404).json({ message: err.message });
+      res
+        .status(404)
+        .json({ success: false, message: err.message, data: null });
     }
   }
 );
@@ -258,30 +305,37 @@ router.put(
     try {
       const course = await Course.findOne({ _id: req.params.courseId });
       if (!course) {
-        return res.status(404).json({ message: "Course not found." });
-      }
-      if (!(req.user._id === course.owner )&& !(req.user.role === "admin")) {
         return res
-          .status(401)
-          .json({ message: "Action not permitted for this user." });
+          .status(404)
+          .json({ success: false, message: "Course not found.", data: null });
+      }
+      if (!(req.user._id === course.owner) && !(req.user.role === "admin")) {
+        return res.status(401).json({
+          success: false,
+          message: "Action not permitted for this user.",
+          data: null,
+        });
       }
       const moduleIndex = course.modules.indexOf(req.params.moduleId);
       if (moduleIndex === -1) {
-        return res.status(404).json({ message: "Module not found." });
+        return res
+          .status(404)
+          .json({ success: false, message: "Module not found.", data: null });
       } else {
-        const module = course.modules[moduleIndex];
-
         const updatedModule = {
-          title: req.body.title ,
-          overview: req.body.overview, 
-          body: req.body.body }
+          title: req.body.title,
+          overview: req.body.overview,
+          body: req.body.body,
+        };
 
         course.modules[moduleIndex] = updatedModule;
         await course.save();
-        res.json(course);
+        return res.json({ success: true, message: "", data: course });
       }
     } catch (err) {
-      res.status(400).json({ message: err.message });
+      res
+        .status(400)
+        .json({ success: false, message: err.message, data: null });
     }
   }
 );

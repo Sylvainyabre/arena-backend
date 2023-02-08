@@ -1,14 +1,13 @@
 const express = require("express");
 const router = express.Router();
 const Module = require("../models/Module");
-passport = require("passport");
+const passport = require("passport");
 //S3 file upload with multer
 const multer = require("multer");
 const upload = multer({ dest: "uploads/" });
 const { uploadFile, getFileStream } = require("../config/s3");
 const fs = require("fs");
 const util = require("util");
-const passport = require("passport");
 const unlinkFile = util.promisify(fs.unlink);
 
 //Get all modules

@@ -53,6 +53,7 @@ app.use("/api/profile", require("./routes/profile"));
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/courses", require("./routes/course"));
 app.use("/api/modules", require("./routes/module"));
+app.use("/api/communication", require("./routes/communication"));
 
 
 const PORT = process.env.PORT || 8000;

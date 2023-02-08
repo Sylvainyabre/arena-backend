@@ -28,7 +28,7 @@ const ModuleSchema = new mongoose.Schema({
     isPublished:{
       type:Boolean,
       require:true,
-      default:true
+      default:false
     },
 });
 

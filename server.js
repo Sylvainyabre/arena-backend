@@ -19,7 +19,7 @@ app.options(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-//Loading the config file
+//Loading the config file 
 dotenv.config({ path: "./config/config.env" });
 
 

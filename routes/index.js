@@ -5,15 +5,13 @@ const checkPermission = require('../middleware/auth')
 
 //Home page   Login/homepage
 //@route   GET /
-
 router.get('/',  (req, res) => {
  res.send("Home page")
 });
 
 
 // Dashboard
-//@route  GETb/dashboard
-
+//@route  GET /dashboard
 router.get('/dashboard', checkPermission('admin'),
 (req,res) =>{
     res.send("Dashboard")

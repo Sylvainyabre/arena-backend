@@ -1,8 +1,8 @@
 const roles = require("./roles");
-const roles = require("./roles");
 
-function isEnrolledIn(course, user) {
-  user.enrollments.includes(course.id);
+
+function isEnrolledIn(courseId, user) {
+  user.enrollments.includes(courseId);
 }
 
 function canEditCourse(course, user) {

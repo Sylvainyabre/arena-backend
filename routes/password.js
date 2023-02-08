@@ -110,7 +110,7 @@ router.post("/reset/:token/:userId", async (req, res) => {
         data: null,
       });
     }
-    // yabre.tech@gmail.com password changed to YSylv6556
+    
     if (newPassword !== newPasswordConfirm) {
       return res.status(400).json({
         success: false,
